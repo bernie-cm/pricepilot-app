@@ -1,0 +1,69 @@
+pre-commit:
+  parallel: true
+  commands:
+
+    gitleaks:
+      run: gitleaks protect --staged --redact --no-git
+      # Scans staged files for secrets (API keys, passwords, tokens).
+      # This is the most important hook — a leaked key in Git history
+      # is very difficult to fully remove and can cause real damage.
+
+    ruff-format:
+      glob: "services/**/*.py"
+      run: ruff format {staged_files}
+      # Auto-formats Python code. Enforces one consistent style across
+      # the whole codebase with no manual effort.
+
+    ruff-lint:
+      glob: "services/**/*.py"
+      run: ruff check --fix {staged_files}
+      # Catches bugs, unused imports, and anti-patterns. --fix applies
+      # safe auto-corrections so you often don't have to touch the code.
+
+    mypy:
+      glob: "services/**/*.py"
+      run: mypy {staged_files} --ignore-missing-imports
+      # Static type checking. Catches type mismatches before runtime —
+      # FastAPI relies heavily on type hints, so this is high-value here.
+
+    bandit:
+      glob: "services/**/*.py"
+      run: bandit -r {staged_files} -ll
+      # Security linter. -ll = only report medium and high severity issues
+      # so you're not flooded with low-confidence warnings.
+
+    prettier:
+      glob: "services/frontend/**/*.{ts,tsx,json,css}"
+      run: prettier --write {staged_files}
+
+    eslint:
+      glob: "services/frontend/**/*.{ts,tsx}"
+      run: eslint --fix {staged_files}
+
+    terraform-fmt:
+      glob: "infra/**/*.tf"
+      run: terraform fmt -check {staged_files}
+
+    helm-lint:
+      glob: "charts/**"
+      run: helm lint charts/pricepilot
+
+    hadolint:
+      glob: "**/Dockerfile*"
+      run: hadolint {staged_files}
+      # Lints Dockerfiles for best practices: pinned image versions,
+      # no running as root, correct layer ordering for cache efficiency.
+
+    yamllint:
+      glob: "**/*.{yml,yaml}"
+      run: yamllint {staged_files}
+      # Catches YAML syntax errors. A broken K8s manifest won't error
+      # at commit time without this — it fails silently at apply time.
+
+pre-push:
+  commands:
+    pytest:
+      glob: "services/**/*.py"
+      run: pytest services/ -q --tb=short
+      # Run tests before pushing. Slower than commit-time hooks, but
+      # prevents opening a PR you already know has failing tests.
