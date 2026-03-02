@@ -252,12 +252,16 @@ cases.
 
 | Layer | Choice | Rationale |
 |---|---|---|
-| **Language — backends** | **Go** (primary) | Small binaries, low memory, great for scrapers and APIs, excellent K8s tooling |
-| **Language — scripts/scrapers** | **Python** (optional) | Rich scraping ecosystem (Playwright, BeautifulSoup, Scrapy); use if Go HTTP is insufficient |
+| **Language — backends** | **Python 3.12** | User is already proficient; rich ecosystem for both scraping and APIs; lets learning energy go toward DevOps/K8s rather than a new language |
+| **API framework** | **FastAPI** | Async-native, automatic OpenAPI docs, Pydantic validation built in; the modern Python API standard |
+| **Scraping** | **Playwright (Python) + httpx** | Playwright for JS-rendered pages; httpx for direct API calls to store internal APIs |
+| **Package management** | **uv** | Extremely fast Python package manager; single tool replacing pip + virtualenv + pip-tools |
+| **ORM + migrations** | **SQLAlchemy 2 + Alembic** | Industry-standard Python ORM; Alembic handles schema migrations |
+| **Task queue client** | **aio-pika** | Async RabbitMQ client for Python; pairs well with FastAPI's async model |
 | **Frontend** | **Next.js (TypeScript)** | SSR, large ecosystem, easy Vercel deploy if needed |
 | **Database** | **PostgreSQL 16** | ACID, excellent JSON support, pg_trgm for fuzzy text search |
-| **Cache** | **Redis 7** | Session storage, API response cache, rate limiting via Redis Lua |
-| **Message queue** | **RabbitMQ** | Simple to operate, good Go/Python clients, durable queues |
+| **Cache** | **Redis 7** | Session storage, API response cache, rate limiting |
+| **Message queue** | **RabbitMQ** | Simple to operate, good Python clients, sufficient for our daily scrape volume; see ADR-003 |
 | **Container runtime** | **Docker** | Standard |
 | **Orchestration** | **Kubernetes (EKS)** | Core learning goal; use k3d locally, EKS in prod |
 | **Package manager (K8s)** | **Helm** | Templated manifests, environment promotion |
@@ -279,15 +283,16 @@ cases.
 ### Local Development Stack
 
 ```
-docker-compose (or Tilt) for:
+docker-compose for:
   - PostgreSQL
   - Redis
   - RabbitMQ
-  - All backend services in hot-reload mode
+  - All backend services with uvicorn --reload (hot-reload)
 
 k3d (k3s in Docker) for:
   - Testing K8s manifests locally before pushing
   - Simulating CronJobs, ingress, etc.
+  - Alternative: minikube or kind — same K8s API, different runner
 ```
 
 ---
@@ -299,12 +304,12 @@ k3d (k3s in Docker) for:
 ```
 pricepilot-app/
 ├── services/
-│   ├── scraper-woolworths/    # Go binary
-│   ├── scraper-coles/         # Go binary
-│   ├── price-service/         # Go binary
-│   ├── user-service/          # Go binary
-│   ├── notifier/              # Go binary
-│   └── frontend/              # Next.js
+│   ├── scraper-woolworths/    # Python (FastAPI + Playwright)
+│   ├── scraper-coles/         # Python (FastAPI + Playwright)
+│   ├── price-service/         # Python (FastAPI + SQLAlchemy)
+│   ├── user-service/          # Python (FastAPI + SQLAlchemy)
+│   ├── notifier/              # Python (async worker)
+│   └── frontend/              # Next.js (TypeScript)
 ├── charts/                    # Helm charts
 │   ├── pricepilot/            # Umbrella chart
 │   └── scrapers/

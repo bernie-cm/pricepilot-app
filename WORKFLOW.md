@@ -20,21 +20,34 @@ Every piece of work ends with a Pull Request that you read, question, and merge
 yourself. If you don't understand something in a PR, that's a signal to pause
 and discuss — not to click Merge and move on.
 
+### Who writes what
+
+| What | Who | Why |
+|---|---|---|
+| Application code (Python services, scrapers) | **You** | Learning by doing; Claude guides and reviews |
+| Dockerfiles (first one) | Together, step by step | Core DevOps concept; worth understanding deeply |
+| Infrastructure config (Helm, Terraform, K8s manifests) | **Claude writes, you read deeply** | Learning comes from understanding it, not typing YAML |
+| CI/CD pipelines (GitHub Actions) | **Claude writes, you read deeply** | Same — comprehension matters more than authorship |
+| Git commands | **You, always** | Muscle memory; Claude provides the exact command when needed |
+
 ### How a typical session works
 
 ```
 1. You describe what you want to work on next
-2. Claude explains the approach and WHY before writing anything
-   (if the approach is non-obvious, we agree on it first)
-3. Claude creates a feature branch and implements the change
-4. Claude opens a Pull Request with:
-   - A plain-English explanation of what changed and why
-   - Learning notes on any new concepts introduced
-   - A testing checklist for you to run before merging
-5. You read the PR, ask questions, request changes if needed
-6. You merge when satisfied
-7. CI runs automatically on merge; you watch it pass
-8. For deployments: you trigger them explicitly (never automatic to prod)
+2. Claude explains the approach, the concepts involved, and alternatives
+   considered — before any code is written
+3. For application code:
+   a. Claude describes what to write and why, file by file
+   b. You write it
+   c. Claude reviews and explains what it would change and why
+4. For infrastructure/config:
+   a. Claude writes it with inline explanatory comments
+   b. You read it, run it, and ask questions until it's clear
+5. You run all git commands: checkout, add, commit, push
+6. You open the PR (Claude provides the description to use)
+7. You review the full diff, ask any final questions, then merge
+8. CI runs; you watch it pass (or debug it together if it fails)
+9. Deployments: you trigger explicitly, never automatic to prod
 ```
 
 ---
@@ -236,24 +249,32 @@ pre-commit:
       # Scans staged files for API keys, tokens, passwords.
       # Catches the #1 most damaging accidental mistake in git history.
 
-    # --- Go ---
-    go-fmt:
-      glob: "services/**/*.go"
-      run: gofmt -l {staged_files} | grep . && exit 1 || exit 0
-      # Enforces standard Go formatting. gofmt is non-negotiable in Go —
-      # there is one correct style and this enforces it.
+    # --- Python ---
+    ruff-format:
+      glob: "services/**/*.py"
+      run: ruff format {staged_files}
+      # Enforces standard Python formatting. ruff is an extremely fast
+      # Rust-based formatter/linter — replaces black, isort, and flake8
+      # in one tool.
 
-    go-vet:
-      glob: "services/**/*.go"
-      run: cd {0} && go vet ./...
-      # Catches suspicious Go constructs the compiler accepts but are
-      # likely bugs (e.g., unreachable code, misused sync primitives).
+    ruff-lint:
+      glob: "services/**/*.py"
+      run: ruff check --fix {staged_files}
+      # Runs hundreds of lint rules in one pass: unused imports, undefined
+      # names, security anti-patterns, and more. --fix auto-corrects where
+      # possible.
 
-    golangci-lint:
-      glob: "services/**/*.go"
-      run: golangci-lint run --fix {staged_files}
-      # Runs ~50 linters in one pass. Catches everything from inefficient
-      # code to security issues. --fix auto-corrects where possible.
+    mypy:
+      glob: "services/**/*.py"
+      run: mypy {staged_files}
+      # Static type checking for Python. Catches type mismatches before
+      # runtime — especially valuable in API boundary code.
+
+    bandit:
+      glob: "services/**/*.py"
+      run: bandit -r {staged_files}
+      # Security-focused Python linter. Catches common issues: SQL
+      # injection risks, hardcoded passwords, use of weak crypto, etc.
 
     # --- TypeScript / Next.js ---
     prettier:
@@ -292,9 +313,9 @@ pre-commit:
 # Runs before every push (heavier checks, worth the extra seconds).
 pre-push:
   commands:
-    go-test:
-      glob: "services/**/*.go"
-      run: cd {0} && go test ./...
+    pytest:
+      glob: "services/**/*.py"
+      run: pytest {0} -q
       # Run tests before pushing so you don't open a PR you know is broken.
 ```
 
@@ -303,16 +324,17 @@ pre-push:
 | Hook | Layer | What it prevents |
 |---|---|---|
 | `gitleaks` | Security | Leaked API keys, passwords, tokens in Git history |
-| `go-fmt` | Quality | Inconsistent Go formatting across the codebase |
-| `go-vet` | Quality | Likely Go bugs the compiler allows |
-| `golangci-lint` | Quality | A wide class of Go bugs, security issues, inefficiencies |
+| `ruff-format` | Quality | Inconsistent Python formatting across the codebase |
+| `ruff-lint` | Quality | A wide class of Python bugs, anti-patterns, unused imports |
+| `mypy` | Correctness | Type mismatches caught before runtime |
+| `bandit` | Security | SQL injection risks, weak crypto, hardcoded credentials |
 | `prettier` | Quality | Inconsistent frontend formatting |
 | `eslint` | Quality | TypeScript/React bugs and anti-patterns |
 | `terraform-fmt` | Quality | Inconsistent Terraform formatting |
 | `helm-lint` | Correctness | Broken Helm charts that would fail at deploy time |
 | `hadolint` | Security/Quality | Insecure or inefficient Dockerfiles |
 | `yamllint` | Correctness | Invalid YAML that silently breaks K8s manifests |
-| `go-test` (pre-push) | Correctness | Pushing code you know has failing tests |
+| `pytest` (pre-push) | Correctness | Pushing code you know has failing tests |
 
 ### Required tools for hooks (add to local setup)
 
@@ -462,9 +484,11 @@ git          — version control (you already have this)
 gh           — GitHub CLI (open PRs, view CI from terminal)
 docker       — container builds and local dependencies
 k3d          — local Kubernetes cluster (k3s in Docker)
+             — alternative: minikube or kind; same K8s API, your preference
 kubectl      — talk to Kubernetes clusters
 helm         — package Kubernetes applications
-go 1.22+     — primary backend language
+python 3.12  — primary backend language
+uv           — Python package manager (replaces pip + virtualenv)
 node 20+     — Next.js frontend
 ```
 
@@ -472,7 +496,9 @@ Pre-commit hook tools (required once hooks are wired up):
 ```
 lefthook        — hook runner (install via brew or go install)
 gitleaks        — secret scanning
-golangci-lint   — Go linter suite
+ruff            — Python formatter and linter (replaces black + flake8 + isort)
+mypy            — Python static type checker
+bandit          — Python security linter
 hadolint        — Dockerfile linter
 yamllint        — YAML linter
 prettier        — frontend formatter (installed via npm)
