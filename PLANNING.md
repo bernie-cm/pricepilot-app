@@ -202,7 +202,7 @@ External Systems
 
 - Server-side rendering for SEO and fast initial load
 - Communicates with API Gateway only (never directly to internal services)
-- Static assets served via CDN (Cloudflare or AWS CloudFront)
+- Static assets served via CDN (AWS CloudFront)
 
 ### 5.6 API Gateway / Ingress
 
@@ -259,7 +259,7 @@ cases.
 | **Cache** | **Redis 7** | Session storage, API response cache, rate limiting via Redis Lua |
 | **Message queue** | **RabbitMQ** | Simple to operate, good Go/Python clients, durable queues |
 | **Container runtime** | **Docker** | Standard |
-| **Orchestration** | **Kubernetes** | Core learning goal; use k3s locally, EKS/GKE in prod |
+| **Orchestration** | **Kubernetes (EKS)** | Core learning goal; use k3d locally, EKS in prod |
 | **Package manager (K8s)** | **Helm** | Templated manifests, environment promotion |
 | **GitOps** | **ArgoCD** | Declarative deployments; free tier works well |
 | **CI/CD** | **GitHub Actions** | Tight GitHub integration, free for open source |
@@ -268,9 +268,13 @@ cases.
 | **Observability — logs** | **Grafana Loki** | Lightweight, integrates with existing Grafana |
 | **Observability — traces** | **OpenTelemetry + Tempo** | Distributed tracing without vendor lock-in |
 | **Email** | **Mailgun** | Already in design; good Australian deliverability |
-| **Secrets management** | **K8s Secrets + Sealed Secrets or Vault** | Never commit secrets to Git |
-| **TLS** | **cert-manager + Let's Encrypt** | Automated certificate rotation |
-| **Ingress** | **ingress-nginx** | Mature, well-documented |
+| **Container registry** | **AWS ECR** | Native EKS integration; no cross-cloud auth friction |
+| **DNS** | **AWS Route 53** | Managed DNS; integrates with ACM and ALB |
+| **TLS** | **AWS ACM + ALB** | Free certs, auto-renewed, no cert-manager needed on EKS |
+| **Ingress** | **AWS Load Balancer Controller + ALB** | Native AWS ingress for EKS; provisions ALBs automatically |
+| **Secrets management** | **AWS Secrets Manager + External Secrets Operator** | Syncs AWS secrets into K8s Secrets; no secrets in Git |
+| **Terraform state** | **S3 + DynamoDB lock table** | Standard AWS remote state backend |
+| **Node autoscaling** | **Karpenter** | AWS-native, faster and more flexible than Cluster Autoscaler |
 
 ### Local Development Stack
 
@@ -431,8 +435,8 @@ operational overhead: upgrades, networking, persistent storage, debugging.
 
 **Mitigations:**
 - Start with **k3d** (k3s in Docker) locally — full K8s API without a cloud bill
-- Use managed Kubernetes (GKE Autopilot or EKS Fargate) in the cloud to
-  offload node management
+- Use **EKS** with managed node groups in the cloud; start with a single `t3.medium`
+  node and scale up only when needed
 - Learn K8s incrementally: start with Deployments and Services, add CronJobs,
   then HPA, then NetworkPolicy
 - Use Helm from day one to avoid raw manifest sprawl
@@ -444,10 +448,12 @@ Redis + bandwidth for scraping adds up quickly.
 
 **Mitigations:**
 - Development: run entirely on laptop with k3d + docker-compose
-- Production: start with a single small managed cluster (GKE Autopilot scales
-  to zero; EKS Fargate charges per vCPU-second)
-- Use spot/preemptible nodes for scraper CronJobs (they are retry-safe)
-- PostgreSQL: start with Cloud SQL or RDS `db.t3.micro`; migrate up if needed
+- Production: EKS with a single `t3.medium` managed node group to start
+- Use **EC2 Spot instances** for scraper CronJob nodes via Karpenter (scrapers
+  are retry-safe, so a spot interruption is harmless)
+- PostgreSQL: **RDS `db.t3.micro`** to start; scale up only when needed
+- **Note:** EKS control plane costs ~$0.10/hr (~$72/month) regardless of workload.
+  Set a billing alert at $50 to catch surprises early
 - Set billing alerts on your cloud provider from day one
 
 ### Risk 6 — Data Freshness vs. Scrape Load
@@ -499,7 +505,7 @@ rate limiting and bans.
 ### Phase 4 — Cloud & CI/CD
 **Goal:** Deployed to a real cloud cluster with automated pipelines.
 
-- [ ] Terraform: provision GKE or EKS cluster, Cloud SQL, Redis
+- [ ] Terraform: provision EKS cluster, RDS (PostgreSQL), ElastiCache (Redis), ECR repos
 - [ ] GitHub Actions: build, test, scan, push images
 - [ ] ArgoCD: GitOps promotion (dev → staging → prod)
 - [ ] cert-manager + Let's Encrypt for TLS
@@ -523,8 +529,9 @@ rate limiting and bans.
 
 These need decisions before or during Phase 1:
 
-1. **Cloud provider preference?** AWS (EKS), GCP (GKE), Azure (AKS), or
-   self-hosted? GKE Autopilot is the easiest for a learning project.
+1. ~~**Cloud provider preference?**~~ **Decided: AWS.** EKS for Kubernetes,
+   RDS for PostgreSQL, ElastiCache for Redis, ECR for container images,
+   Route 53 + ACM for DNS/TLS, Secrets Manager for secrets.
 
 2. **Monorepo tool?** Plain Git is fine to start. If build times become
    painful, consider Turborepo (for JS) or Bazel.
