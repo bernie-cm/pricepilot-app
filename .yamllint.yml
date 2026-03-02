@@ -1,0 +1,14 @@
+extends: default
+
+rules:
+  line-length:
+    max: 120
+    level: warning  # warn but don't fail on long lines
+
+  truthy:
+    check-keys: false  # allows 'on:' in GitHub Actions workflows without flagging it
+
+  comments:
+    min-spaces-from-content: 1  # requires a space after '#' in comments
+
+  document-start: disable  # allows YAML files without a leading '---' marker
