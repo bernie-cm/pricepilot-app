@@ -3,7 +3,7 @@ pre-commit:
   commands:
 
     gitleaks:
-      run: gitleaks protect --staged --redact --no-git
+      run: gitleaks protect --staged --redact
       # Scans staged files for secrets (API keys, passwords, tokens).
       # This is the most important hook — a leaked key in Git history
       # is very difficult to fully remove and can cause real damage.
