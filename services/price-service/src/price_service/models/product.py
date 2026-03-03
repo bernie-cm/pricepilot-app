@@ -10,13 +10,15 @@ store (string): "woolworths" or "coles"
 created_at (datetime): when we first saw this product
 updated_at (datetime): last time we updated it
 """
+
 import uuid
 from datetime import datetime
 
 from sqlalchemy import func, DateTime, Uuid, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from price_service.database import Base # this imports the declarative base superclass
+from price_service.database import Base  # this imports the declarative base superclass
+
 
 class Product(Base):
     __tablename__ = "products"
@@ -26,4 +28,6 @@ class Product(Base):
     url: Mapped[str] = mapped_column(unique=True)
     store: Mapped[str] = mapped_column(String(50))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
