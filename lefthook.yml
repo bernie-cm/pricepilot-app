@@ -64,6 +64,8 @@ pre-push:
   commands:
     pytest:
       glob: "services/**/*.py"
-      run: pytest services/ -q --tb=short
       # Run tests before pushing. Slower than commit-time hooks, but
       # prevents opening a PR you already know has failing tests.
+      # Exit code 5 means "no tests collected" — acceptable early in the
+      # project when test files don't exist yet. Codes 1-4 still fail.
+      run: pytest services/ -q --tb=short; code=$?; [ $code -eq 0 ] || [ $code -eq 5 ]
