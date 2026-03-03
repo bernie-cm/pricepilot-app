@@ -27,6 +27,7 @@ from price_service.config import settings
 # Import Base so Alembic can inspect our models for --autogenerate.
 # As you add model files, import them here so Alembic sees them.
 from price_service.database import Base  # noqa: F401
+from price_service.models import product # noqa: F401
 
 # Alembic Config object — provides access to values in alembic.ini.
 config = context.config
