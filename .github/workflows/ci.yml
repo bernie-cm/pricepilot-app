@@ -123,7 +123,7 @@ jobs:
 
       - name: Run tests
         if: steps.check.outputs.has_files == 'true'
-        run: uvx pytest services/ -v --tb=short
+        run: uvx pytest services/ -v --tb=short || test $? -eq 5
         # --tb=short gives concise tracebacks — enough to understand failures
         # without flooding the log.
 
