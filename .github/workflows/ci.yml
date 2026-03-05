@@ -88,7 +88,7 @@ jobs:
 
       - name: mypy type check
         if: steps.check.outputs.has_files == 'true'
-        run: uvx mypy services/ --ignore-missing-imports
+        run: uvx mypy services/ --ignore-missing-imports --exclude 'alembic/'
         # Static type checking. --ignore-missing-imports prevents failures
         # on third-party libraries that don't ship type stubs.
 

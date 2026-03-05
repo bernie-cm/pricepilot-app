@@ -43,6 +43,7 @@ line-length = 120
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true
+exclude = ["alembic/"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
