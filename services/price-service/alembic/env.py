@@ -28,7 +28,7 @@ from price_service.config import settings
 # As you add model files, import them here so Alembic sees them.
 from price_service.database import Base  # noqa: F401
 from price_service.models import product  # noqa: F401
-from price_service.models import price # noqa: F401
+from price_service.models import price  # noqa: F401
 
 # Alembic Config object — provides access to values in alembic.ini.
 config = context.config

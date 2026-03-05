@@ -15,6 +15,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from price_service.database import Base
 
+
 class Price(Base):
     __tablename__ = "prices"
 
