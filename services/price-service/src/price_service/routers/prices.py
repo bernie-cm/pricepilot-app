@@ -11,6 +11,6 @@ router = APIRouter()
 @router.get("/prices")
 async def list_prices(
     db: AsyncSession = Depends(get_db),
-    ):
+):
     result = await db.scalars(select(Price))
     return result.all()
