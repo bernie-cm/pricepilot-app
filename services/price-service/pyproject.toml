@@ -1,0 +1,52 @@
+[project]
+name = "price-service"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    # FastAPI is the web framework. It handles routing, request parsing,
+    # response serialisation, and generates OpenAPI docs automatically.
+    "fastapi>=0.115.0",
+    # Uvicorn is the ASGI server that runs the FastAPI app.
+    # [standard] includes extras for better performance (uvloop, httptools).
+    "uvicorn[standard]>=0.30.0",
+    # SQLAlchemy 2 with the asyncio extra enables async DB sessions.
+    # The [asyncio] extra pulls in greenlet, required for async support.
+    "sqlalchemy[asyncio]>=2.0",
+    # asyncpg is the async PostgreSQL driver SQLAlchemy uses under the hood.
+    # We never call it directly — SQLAlchemy does — but it must be installed.
+    "asyncpg>=0.29",
+    # Alembic manages database schema migrations (see alembic/ directory).
+    "alembic>=1.13",
+    # aio-pika is the async RabbitMQ client. The consumer uses this to
+    # subscribe to scraper messages and process them one at a time.
+    "aio-pika>=9.4",
+    # pydantic-settings reads config from environment variables and .env files.
+    # It gives us type-safe, validated config without manual os.environ calls.
+    "pydantic-settings>=2.0",
+]
+
+[dependency-groups]
+# Dev dependencies are only installed in development, not in the Docker image.
+dev = [
+    "pytest>=8.0.0",
+    # httpx is required by FastAPI's async TestClient.
+    "httpx>=0.27.0",
+    # pytest-asyncio lets us write async test functions with `async def`.
+    # asyncio_mode = "auto" (set below) means we don't need @pytest.mark.asyncio
+    # on every test — it applies automatically.
+    "pytest-asyncio>=0.23",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+exclude = ["alembic/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# "auto" mode: every async test function is treated as an asyncio coroutine
+# without needing the @pytest.mark.asyncio decorator.
+asyncio_mode = "auto"
