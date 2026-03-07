@@ -146,6 +146,38 @@ This section tracks implementation progress across sessions.
 - [ ] User Service (auth, shopping lists)
 - [ ] Notifier Service (daily email digest)
 
+### CI/CD Progression
+
+This project follows a staged approach to CI/CD, building up to a production-like GitOps workflow.
+
+#### Stage 1: GitHub Actions CI (Current)
+- [x] CI pipeline with 5 jobs: validate, lint-python, test, lint-docker, ci-pass
+- [x] Branch protection requiring `ci-pass` before merge
+- [x] Pre-commit hooks via Lefthook (local quality gates)
+- [ ] Add Docker image build step (triggered on PR)
+- [ ] Add container security scanning (Trivy)
+
+#### Stage 2: Local Kubernetes (k3d)
+- [ ] Dockerise price-service
+- [ ] Write Helm chart for price-service
+- [ ] Deploy to k3d cluster locally
+- [ ] Set up nginx-ingress
+- [ ] Deploy Prometheus + Grafana for observability
+
+#### Stage 3: ArgoCD (GitOps)
+- [ ] Deploy ArgoCD to k3d
+- [ ] Configure ArgoCD Application pointing to Helm chart
+- [ ] Implement image tag update workflow (CI builds → ArgoCD syncs)
+- [ ] Add sync waves for dependency ordering
+
+#### Stage 4: Cloud Deployment (AWS EKS)
+- [ ] Terraform: EKS cluster, RDS, ElastiCache, ECR
+- [ ] GitHub Actions: push images to ECR
+- [ ] ArgoCD: multi-environment promotion (dev → staging → prod)
+- [ ] cert-manager + Let's Encrypt for TLS
+
+**DevOps concepts covered:** Each stage introduces new concepts that will be explained as we implement them — container orchestration, declarative config, GitOps principles, infrastructure as code, observability, and environment promotion strategies.
+
 ### Session Notes
 
 **2026-03-07:** Reviewed codebase structure and git history. Identified next step as adding products router, following same pattern as prices router. User wants to be hands-on with coding and learn DevOps concepts along the way. Methodology: explain business problems solved by technical choices.
