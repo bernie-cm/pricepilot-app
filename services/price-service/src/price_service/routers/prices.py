@@ -1,3 +1,4 @@
+import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +11,11 @@ router = APIRouter()
 
 @router.get("/prices")
 async def list_prices(
+    product_id: uuid.UUID | None = None,
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.scalars(select(Price))
+    query = select(Price)
+    if product_id:
+        query = query.where(Price.product_id == product_id)
+    result = await db.scalars(query)
     return result.all()

@@ -128,12 +128,12 @@ This section tracks implementation progress across sessions.
 - [x] Create `Price` model and Alembic migration
 - [x] Add FastAPI app entry point with `/health` endpoint
 - [x] Add `GET /prices` router (lists all prices)
+- [x] Add `GET /products` router (list/search products)
 
 #### In Progress
-- [ ] Add `GET /products` router (list/search products)
+- [ ] Add `GET /prices?product_id=X` filtering (prices for a specific product)
 
 #### Up Next
-- [ ] Add `GET /prices?product_id=X` filtering (prices for a specific product)
 - [ ] Add `GET /products/{id}` endpoint (single product with latest price)
 - [ ] Build RabbitMQ consumer to process incoming scrape data
 - [ ] Add Pydantic schemas for request/response validation
