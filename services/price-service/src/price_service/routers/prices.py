@@ -15,7 +15,7 @@ async def list_prices(
     db: AsyncSession = Depends(get_db),
 ):
     query = select(Price)
-    if product_id:
+    if product_id is not None:
         query = query.where(Price.product_id == product_id)
     result = await db.scalars(query)
     return result.all()
