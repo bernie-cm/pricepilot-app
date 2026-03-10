@@ -35,6 +35,12 @@ dev = [
     # asyncio_mode = "auto" (set below) means we don't need @pytest.mark.asyncio
     # on every test — it applies automatically.
     "pytest-asyncio>=0.23",
+    # ruff is a fast Python linter and formatter (replaces flake8 + black).
+    "ruff>=0.8.0",
+    # mypy is the static type checker for Python.
+    "mypy>=1.11",
+    # bandit finds common security issues in Python code.
+    "bandit>=1.8",
 ]
 
 [tool.ruff]
@@ -44,6 +50,7 @@ line-length = 120
 python_version = "3.12"
 ignore_missing_imports = true
 exclude = ["alembic/"]
+plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
